@@ -2,6 +2,6 @@ import {
   AppRegistry,
 } from 'react-native';
 
-import Root from './components/root'
+import Root from './src/components/root'
 
 AppRegistry.registerComponent('brunchtest', () => Root);

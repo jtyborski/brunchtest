@@ -4,12 +4,12 @@ import {
   View,
 } from 'react-native'
 
-const CurrentBrunchDetailsDisplay = () => {
+const BrunchDetailsDisplay = () => {
   return (
-    <View style={{flex: 1}}>
+    <View>
       <Text>Current Brunch Details</Text>
     </View>
   )
 }
 
-export default CurrentBrunchDetailsDisplay
+export default BrunchDetailsDisplay
