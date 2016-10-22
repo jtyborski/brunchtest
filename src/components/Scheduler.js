@@ -31,6 +31,8 @@ export default class Scheduler extends Component {
       rowHasChanged: (r1, r2) => r1 !== r2
     })
 
+    this.addToInvitedContacts = this.addToInvitedContacts.bind(this)
+
     this.state = {
       selectedTab: 'when',
       date: null,
@@ -38,16 +40,17 @@ export default class Scheduler extends Component {
       contacts: [],
       locations: [],
       invitedContacts: [],
+      chosenLocations: [],
     }
   }
 
   componentWillMount() {
-    axios.get(initialGPlacesRequest)
-      .then(res => {
-        this.setState({
-          locations: res.data.results
-        })
-      })
+    // axios.get(initialGPlacesRequest)
+    //   .then(res => {
+    //     this.setState({
+    //       locations: res.data.results
+    //     })
+    //   })
 
     Contacts.getAll((err, contacts) => {
       if(err && err.type === 'permissionDenied'){
@@ -61,6 +64,23 @@ export default class Scheduler extends Component {
 
   changeTab (selectedTab) {
     this.setState({selectedTab})
+  }
+
+  addToInvitedContacts(newContact) {
+    this.setState({
+      invitedContacts: [...this.state.invitedContacts, newContact]
+    })
+  }
+
+  renderContactsRow(rowData, sectionID) {
+    return (
+      <ListItem
+        onPress={() => console.log(rowData)}
+        key={sectionID}
+        title={rowData.givenName}
+        subtitle={rowData.subtitle}
+      />
+    )
   }
 
   render() {
@@ -77,9 +97,11 @@ export default class Scheduler extends Component {
 
     return (
       <View style={{flex: 1}}>
-        <Text>
-          {this.state.date} - {this.state.time}
-        </Text>
+        <BrunchDetailsDisplay
+          date={this.state.date}
+          time={this.state.time}
+          locations={this.state.chosenLocations}
+          invited={this.state.invitedContacts} />
 
         <Tabs>
           <Tab
@@ -166,12 +188,23 @@ export default class Scheduler extends Component {
             <View style={styles.container}>
 
               <Text style={styles.welcome}>Who?</Text>
+
               <Card>
-                <List>
-                  <ListView
-                    dataSource={contactsRows}
-                    renderRow={this.renderContactsRow}
-                    enableEmptySections={true} />
+                <List containerStyle={{marginBottom: 20}}>
+                  {
+                    this.state.contacts.map((c, i) => (
+                      <TouchableOpacity
+                        onPress={() => {
+                          this.addToInvitedContacts(c)
+
+                        }}>
+                      <ListItem
+                        key={i}
+                        title={c.givenName}
+                      />
+                  </TouchableOpacity>
+                    ))
+                  }
                 </List>
               </Card>
 
@@ -179,20 +212,6 @@ export default class Scheduler extends Component {
           </Tab>
         </Tabs>
       </View>
-    )
-  }
-
-  renderContactsRow (rowData, sectionID) {
-    let self = this
-    return (
-      <ListItem
-        key={sectionID}
-        title={rowData.givenName}
-        subtitle={rowData.subtitle}
-        onPress={() =>
-          console.log(self)//self.setState({invitedContacts: [...this.state.invitedContacts, ...rowData]})
-        }
-      />
     )
   }
 }
