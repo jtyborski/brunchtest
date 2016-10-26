@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+
 import {
   Text,
   View,
@@ -6,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native'
+
 import {
   Card,
   Tabs,
@@ -14,12 +16,16 @@ import {
   List,
   ListItem,
 } from 'react-native-elements'
-import DatePicker from 'react-native-datepicker'
-import BrunchDetailsDisplay from './BrunchDetailsDisplay'
-import LocationsCards from './LocationsCards'
-import googConfig from '../../google-places-api-key'
-import Contacts from 'react-native-contacts'
+
 import axios from 'axios'
+
+import DatePicker from 'react-native-datepicker'
+import BrunchDetailsDisplay from '../components/BrunchDetailsDisplay'
+import LocationsCards from '../components/LocationsCards'
+import googConfig from '../../api-keys'
+import Contacts from 'react-native-contacts'
+
+import firebaseApp from '../utils/firebase'
 
 let initialGPlacesRequest = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=43.038902,-87.906471&radius=500&type=restaurant&keyword=brunch&key=' + googConfig.GOOGLE_PLACES_API_KEY
 
@@ -32,6 +38,7 @@ export default class Scheduler extends Component {
     })
 
     this.addToInvitedContacts = this.addToInvitedContacts.bind(this)
+    this.addPlaceToLocations = this.addPlaceToLocations.bind(this)
 
     this.state = {
       selectedTab: 'when',
@@ -42,21 +49,39 @@ export default class Scheduler extends Component {
       invitedContacts: [],
       chosenLocations: [],
     }
+
+    this.brunchesRef = this.getRef().child('brunches');
+
   }
 
   componentWillMount() {
-    // axios.get(initialGPlacesRequest)
-    //   .then(res => {
-    //     this.setState({
-    //       locations: res.data.results
-    //     })
-    //   })
+    this.getContacts()
 
-    Contacts.getAll((err, contacts) => {
+    if (this.locations < 1) this.getPlaces()
+  }
+
+  componentDidMount() {
+    // this.listenForItems(this.itemsRef);
+  }
+
+  getRef() {
+    return firebaseApp.database().ref();
+  }
+
+  getPlaces() {
+    return axios.get(initialGPlacesRequest)
+      .then(res => {
+        this.setState({
+          locations: res.data.results
+        })
+      })
+  }
+
+  getContacts() {
+    return Contacts.getAll((err, contacts) => {
       if(err && err.type === 'permissionDenied'){
         console.log('error getting Contacts', err.type)
       } else {
-        console.log(contacts)
         this.setState({ contacts })
       }
     })
@@ -66,10 +91,25 @@ export default class Scheduler extends Component {
     this.setState({selectedTab})
   }
 
+  addPlaceToLocations(newLocation) {
+    if (this.state.chosenLocations.length >= 3 ) {
+      alert('You can choose 3 locations max')
+      return
+    } else {
+      this.setState({
+        chosenLocations: [...this.state.chosenLocations, newLocation]
+      })
+    }
+  }
+
   addToInvitedContacts(newContact) {
     this.setState({
       invitedContacts: [...this.state.invitedContacts, newContact]
     })
+  }
+
+  _sendBrunchInvitation() {
+
   }
 
   renderContactsRow(rowData, sectionID) {
@@ -81,6 +121,14 @@ export default class Scheduler extends Component {
         subtitle={rowData.subtitle}
       />
     )
+  }
+
+  signOut() {
+    firebase.auth().signOut().then(function() {
+      alert('Sign-out successful.')
+    }, function(error) {
+      alert('Sign-out error happened..')
+    })
   }
 
   render() {
@@ -110,8 +158,8 @@ export default class Scheduler extends Component {
             selectedTitleStyle={[styles.titleSelected]}
             selected={selectedTab === 'when'}
             title={selectedTab === 'when' ? 'WHEN' : null}
-            renderIcon={() => <Icon name='whatshot' size={26} />}
-            renderSelectedIcon={() => <Icon name='whatshot' size={26} />}
+            renderIcon={() => <Icon name='alarm-add' size={26} />}
+            renderSelectedIcon={() => <Icon name='alarm-add' size={26} />}
             onPress={() => this.changeTab('when')}>
 
             <View style={styles.container}>
@@ -166,13 +214,15 @@ export default class Scheduler extends Component {
             selectedTitleStyle={styles.titleSelected}
             selected={selectedTab === 'where'}
             title={selectedTab === 'where' ? 'WHERE' : null}
-            renderIcon={() => <Icon name='important-devices' size={26} />}
-            renderSelectedIcon={() => <Icon name='important-devices' size={26} />}
+            renderIcon={() => <Icon name='map' size={26} />}
+            renderSelectedIcon={() => <Icon name='map' size={26} />}
             onPress={() => this.changeTab('where')}>
             <View style={styles.container}>
 
               <Text style={styles.welcome}>What sounds tasty?</Text>
-              <LocationsCards />
+              <LocationsCards
+                suggestedLocations={this.state.locations}
+                addLocation={this.addPlaceToLocations} />
 
             </View>
           </Tab>
@@ -182,31 +232,24 @@ export default class Scheduler extends Component {
             selectedTitleStyle={[styles.titleSelected]}
             selected={selectedTab === 'who'}
             title={selectedTab === 'who' ? 'WHO' : null}
-            renderIcon={() => <Icon name='important-devices' size={26} />}
-            renderSelectedIcon={() => <Icon name='important-devices' size={26} />}
+            renderIcon={() => <Icon name='people' size={26} />}
+            renderSelectedIcon={() => <Icon name='people' size={26} />}
             onPress={() => this.changeTab('who')}>
             <View style={styles.container}>
 
               <Text style={styles.welcome}>Who?</Text>
-
-              <Card>
-                <List containerStyle={{marginBottom: 20}}>
-                  {
-                    this.state.contacts.map((c, i) => (
-                      <TouchableOpacity
-                        onPress={() => {
-                          this.addToInvitedContacts(c)
-
-                        }}>
+              <List containerStyle={{marginBottom: 20}}>
+                {
+                  this.state.contacts.map((c, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => { this.addToInvitedContacts(c) }}>
                       <ListItem
-                        key={i}
-                        title={c.givenName}
-                      />
-                  </TouchableOpacity>
-                    ))
-                  }
-                </List>
-              </Card>
+                        title={c.givenName} />
+                    </TouchableOpacity>
+                  ))
+                }
+              </List>
 
             </View>
           </Tab>

@@ -7,15 +7,18 @@ import SwipeCards from 'react-native-swipe-cards';
 let Card = React.createClass({
   render() {
     return (
-      <View style={[styles.card, {backgroundColor: this.props.backgroundColor}]}>
-        <Text>{this.props.text}</Text>
+      <View style={[styles.card, {backgroundColor: 'rebeccapurple'}]}>
+        <Image
+          style={styles.image}
+          source={{uri: this.props.icon}} />
+        <Text>{this.props.name}</Text>
       </View>
     )
   }
 })
 
 const Cards = [
-  {text: 'Tomato', backgroundColor: 'red'},
+  {text: 'Tomato', backgroundColor: 'crimson'},
   {text: 'Aubergine', backgroundColor: 'purple'},
   {text: 'Courgette', backgroundColor: 'green'},
   {text: 'Blueberry', backgroundColor: 'blue'},
@@ -26,19 +29,24 @@ const Cards = [
 export default React.createClass({
   getInitialState() {
     return {
-      cards: Cards
+      cards: Cards //this.props.suggestedLocations
     }
   },
-  handleYup (card) {
+  
+  handleYup(card) {
+    this.props.addLocation(card)
     console.log(`Yup for ${card.text}`)
   },
+
   handleNope (card) {
     console.log(`Nope for ${card.text}`)
   },
-  render() {
 
-    //const { cards } = this.props
-    //if (cards < 1) return <Text>Loading...</Text>
+  render() {
+    const { suggestedLocations } = this.props
+
+    // if (suggestedLocations < 1) return <Text>Loading...</Text>
+    // console.log(suggestedLocations)
 
     return (
       <View>
@@ -65,6 +73,11 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
     fontSize: 20,
+    marginBottom: 20,
+  },
+  image: {
+    width: 100,
+    height: 100,
     marginBottom: 20,
   }
 })
